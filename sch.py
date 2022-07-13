@@ -60,7 +60,7 @@ default_desc = {
         #    1     2  3  4     5  6  7  8
         ["VCC","GND", x, x,"led1", x, x, x,
         "r1", "r2", "r3", "r4", "r5", x, # 14
-        "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", # 22
+        "c1", "c2", "c3", "c4", "c5", "c6", "c7", x, # 22
         x, x, x, x, x, x, x, x], #30
         #    1     2  3  4     5  6  7  8
         ["VCC","GND", x, x,"led2", x, x, x,
@@ -242,6 +242,7 @@ def gen_netlist(desc):
     os.system("mv sch.net dest.net")
 
 
+
 def check_pos_desc(desc):
     assert "name" in desc           # str
 
@@ -252,6 +253,17 @@ def check_pos_desc(desc):
     assert "trans_dict"  in desc  # S12 -> [0, 1] mapping
     assert "key_pos"  in desc     # layout: [[(X, Y), ...]]  X, Y unit mm
     assert "sat_pos"  in desc     # layout: [[(X, Y, rot), ...]]  X, Y unit mm  rot
+
+def gen_mount_hole(hole_desc):
+    holes_pcb = []
+    for hole in hole_desc:
+        x, y, attr = hole
+        if "skip" in attr: continue
+        if "padded" in attr:
+            holes_pcb.append(lib_pcbelem.mounthole2d5mmpadded_tmpl % ("%f %f" % (x, y)))
+        else:
+            holes_pcb.append(lib_pcbelem.mounthole2d5mm_tmpl % ("%f %f" % (x, y)))
+    return holes_pcb
 
 
 import lib_pcbelem
@@ -320,11 +332,43 @@ def adjust_pcb(pcb_file, pos_desc_file):
         new_pcb_lines.append(lib_pcbelem.split_hole_lshift)
     else:
         new_pcb_lines.append(lib_pcbelem.split_hole_normal)
-    # add mount holes
-    new_pcb_lines.append(lib_pcbelem.padded_holes)
     # edge cut
     new_pcb_lines.append(lib_pcbelem.edgecut)
-
+    # add mount holes
+    new_pcb_lines.append(lib_pcbelem.padded_holes)
+    holes = [
+        # left most (move right)
+        (87.4893, 92.5208, "left skip"),
+        (63.7489 + 1.5, 121.1212, "left skip"),
+        # left top
+        (80.9625,  73.81875, "left"),
+        (157.1625, 73.81875, "left"),
+        (176.2125, 73.81875, "left"),
+        # left mid
+        (128.58751, 102.1, "left"),
+        (147.63751, 102.1, "left padded"),
+        (166.68751, 102.1, "left"),
+        # left mid low
+        (104.775,  135.89, "left"),
+        (142.875,  135.89, "left padded"),
+        (180.975,  135.89, "left"),
+        # right top
+        (195.2625, 73.81875, "right"),
+        (214.3125, 73.81875, "right"),
+        (309.5625, 73.81875, "right"),
+        # right mid
+        (204.7875,  102.1, "right "),
+        (228.6   ,  102.1, "right padded"),
+        (261.93749, 102.1, "right"),
+        # right mid low
+        (219.075,  135.89, "right"),
+        (257.175,  135.89, "padded"),
+        (295.275,  135.89, "right"),
+        # right most (move left)
+        (322.3399, 92.5208, "right skip"),
+        (345.8312 - 1.5, 121.1212, "right skip")
+    ]
+    new_pcb_lines += gen_mount_hole(holes)
 
     new_pcb_lines.append(")")
     new_pcb_lines.append("")

@@ -55,13 +55,13 @@ mounthole2d5mmpadded_tmpl = """
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d8db916f-c8d2-493c-ba90-b70a418ab48c)
     )
-    (fp_text value "MountingHole_padded_2.5mm" (at 0 3.5) (layer "F.Fab")
+    (fp_text value "MountingHole_padded_2.5mm" (at 0 3.5) (layer "F.Fab") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp c4f68296-3c17-4b99-803f-43207612cf46)
     )
     (fp_circle (center 0 0) (end 2.5 0) (layer "Cmts.User") (width 0.15) (fill none) (tstamp 584f7ee5-300f-4226-9927-614933edbbe0))
     (fp_circle (center 0 0) (end 2.75 0) (layer "F.CrtYd") (width 0.05) (fill none) (tstamp 380592bc-77c3-4e7d-88ed-2125a285233b))
-    (pad "" thru_hole circle locked (at 0 0) (size 3.25 3.25) (drill 2.5) (layers *.Cu *.Mask) (tstamp 8fe0cd38-cdd9-4b1c-8fdb-dd68eb399f6f))
+    (pad "" thru_hole circle locked (at 0 0) (size 2.65 2.65) (drill 2.45) (layers *.Cu *.Mask) (tstamp 8fe0cd38-cdd9-4b1c-8fdb-dd68eb399f6f))
   )
 """
 
@@ -92,7 +92,7 @@ padded_holes = """
       (effects (font (size 1.524 1.524) (thickness 0.3048)))
       (tstamp 790aac60-8af7-4c8a-86b0-99f3fe64112a)
     )
-    (pad "" np_thru_hole circle locked (at 0 0) (size 7.00024 7.00024) (drill oval 5.00126 2.49936) (layers *.Cu *.Mask) (tstamp 5a9c0dbe-9c68-4f1b-bb8c-18e35b87c9b2))
+    (pad "" np_thru_hole circle locked (at 0 0) (size 5.9 5.9) (drill oval 5.00126 2.4994) (layers *.Cu *.Mask) (tstamp 5a9c0dbe-9c68-4f1b-bb8c-18e35b87c9b2))
   )
 
   (footprint "hole:PKRHSL" (layer "F.Cu")
@@ -122,7 +122,7 @@ padded_holes = """
       (effects (font (size 1.524 1.524) (thickness 0.3048)))
       (tstamp 16ea365c-d7f5-4c44-b4c6-7d8ef461a0ca)
     )
-    (pad "" np_thru_hole circle locked (at 0 0) (size 7 7) (drill oval 5.00126 2.4994) (layers F&B.Cu *.Mask) (tstamp 753c83e3-0e5d-49a7-99fa-14d791ee9328))
+    (pad "" np_thru_hole circle locked (at 0 0) (size 5.9 5.9) (drill oval 5.00126 2.4994) (layers F&B.Cu *.Mask) (tstamp 753c83e3-0e5d-49a7-99fa-14d791ee9328))
   )
 
   (footprint "hole:PKRHSL" (layer "F.Cu")
@@ -152,7 +152,7 @@ padded_holes = """
       (effects (font (size 1.524 1.524) (thickness 0.3048)))
       (tstamp df9a1242-2d73-4343-b170-237bc9a8080f)
     )
-    (pad "" np_thru_hole oval locked (at 0 0) (size 7.00024 4) (drill oval 5.00126 2.49936) (layers *.Cu *.Mask) (tstamp 2d0d333a-99a0-4575-9433-710c8cc7ac0b))
+    (pad "" np_thru_hole oval locked (at 0 0) (size 5.1 2.5) (drill oval 5.1 2.5) (layers *.Cu *.Mask) (tstamp 2d0d333a-99a0-4575-9433-710c8cc7ac0b))
     (model "cherry_mx1.wrl"
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
@@ -237,7 +237,7 @@ split_hole_normal = """
       (effects (font (size 1.27 1.27) (thickness 0.15)))
       (tstamp b49c8bc6-72c9-4619-af09-3d35548d36fe)
     )
-    (pad "" np_thru_hole oval locked (at 0.11875 0.09502 90) (size 9 4) (drill oval 9 4) (layers F&B.Cu *.Mask) (tstamp c210293b-1d7a-4e96-92e9-058784106727))
+    (pad "" np_thru_hole oval locked (at 0.11875 0.09502 90) (size 6.6 4) (drill oval 6.6 4) (layers F&B.Cu *.Mask) (tstamp c210293b-1d7a-4e96-92e9-058784106727))
   )
 
   (footprint "hole:PKRH" (layer "F.Cu")
@@ -778,7 +778,7 @@ split_hole_lshift = """
       (effects (font (size 1.27 1.27) (thickness 0.15)))
       (tstamp b49c8bc6-72c9-4619-af09-3d35548d36fe)
     )
-    (pad "" np_thru_hole oval locked (at 0.11875 0.09502 90) (size 9 4) (drill oval 9 4) (layers F&B.Cu *.Mask) (tstamp c210293b-1d7a-4e96-92e9-058784106727))
+    (pad "" np_thru_hole oval locked (at 0.11875 0.09502 90) (size 6.6 4) (drill oval 6.6 4) (layers F&B.Cu *.Mask) (tstamp c210293b-1d7a-4e96-92e9-058784106727))
   )
 
   (footprint "hole:PKRH" (layer "F.Cu")
