@@ -4,4 +4,4 @@ gerber*
 _saved*
 *production*
 *backup*
-
+!*.net

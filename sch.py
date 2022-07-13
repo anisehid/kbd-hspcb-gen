@@ -6,6 +6,7 @@ import sys
 from collections import defaultdict
 from pprint import pprint
 import json
+import math
 from skidl import (
     Net,
     Part,
@@ -79,13 +80,15 @@ def keymapidx_to_posmapidx_transdict(key_map):
         for c_id, key in enumerate(row):
             r, c = key
             tran_key = "%d%d" % (r, c)
-            trans_dict[tran_key] = [r_id, c_id]
+            trans_dict[tran_key] = (r_id, c_id)
 
     return trans_dict
 
 def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
     #### prepare layout_desc  ####
     trans_dict = keymapidx_to_posmapidx_transdict(sch_desc["key_matrix"])
+    rev_trans_dict = {}
+    for k, v in trans_dict.items(): rev_trans_dict[v] = k
 
     MM_PER_INCH = 25.4
     KEY_DIST = 0.75 * MM_PER_INCH
@@ -95,6 +98,8 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
     stabilizer_type = "pcb"
     # if modifier is None:
     # modifier = {}
+    #
+
 
     key_locs = []
     sat_locs = []
@@ -119,7 +124,8 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
                 mov_y = 0
 
                 center_pos = (key_pos[0] + (col - 4) / 4 * KEY_DIST / 2 + mov_x / 4.0 * KEY_DIST,
-                              key_pos[1] + (mov_y / 4.0) * KEY_DIST)
+                              key_pos[1] + (mov_y / 4.0) * KEY_DIST,
+                              180 if led_pos_up else 0) # rotate
                 key_locs[-1].append(center_pos)
 
                 if col >= 8:  # sat axis
@@ -145,6 +151,70 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
 
     with open(sch_desc["name"]+"_layoutdesc.json", "w") as f:
         json.dump(layout_desc, f)
+
+    ########### bom pos handle ###########
+    bom_items = {"1N4148": ["SOD-323", ""],
+                 "CONN2x15": ["2x15pin_0.4", ""],
+                 "KHHS": ["HS1U", ""],
+                 "led2812": ["3528-rev", ""]}
+    bom_array = {"1N4148": [], "CONN2x15": [], "KHHS": [], "led2812": []}
+
+    pos_items = []
+
+    # add conn
+    bom_array["CONN2x15"] += ["CN1", "CN2"]
+    pos_items += [
+        ["J1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",138.112500,83.250000,0.000000,"bottom"],
+        ["J2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",252.412500,83.250000,0.000000,"bottom"]
+    ]
+    def add_d(pos_items, ref_suf, cx, cy, rot):
+        bom_array["1N4148"].append("D" + ref_suf)
+        pos_items.append(["D" + ref_suf, "1N4148", "SOD-323", cx, cy, rot, "bottom"])
+    def add_l(pos_items, ref_suf, cx, cy, rot):
+        bom_array["led2812"].append("LED" + ref_suf)
+        pos_items.append(["LED" + ref_suf, "led2812", "3528-rev", cx, cy, rot, "bottom"])
+    def add_h(pos_items, ref_suf, cx, cy, rot):
+        bom_array["KHHS"].append("S" + ref_suf)
+        pos_items.append(["S" + ref_suf, "hssocket", "kh1u", cx, cy, rot, "bottom"])
+
+    for rid, row in enumerate(key_locs):
+        for cid, key in enumerate(row):
+            ref_name_suffix = rev_trans_dict[(rid, cid)]
+
+            cx, cy, rot = key
+            cos_rot = math.cos((rot / 180) * math.pi)
+            sin_rot = math.sin((rot / 180) * math.pi)
+
+            diode_offX, diode_offY = 5.355607, -2.009679
+            led_offX, led_offY = 0, 5.08
+            hs_offX, hs_offY = 0, -5.08
+
+            d_cx = cx + cos_rot * diode_offX
+            d_cy = cy + cos_rot * diode_offY
+            l_cx = cx + cos_rot * led_offX
+            l_cy = cy + cos_rot * led_offY
+            h_cx = cx + cos_rot * hs_offX
+            h_cy = cy + cos_rot * hs_offY
+            add_d(pos_items, ref_name_suffix, d_cx, d_cy, rot)
+            add_l(pos_items, ref_name_suffix, l_cx, l_cy, rot)
+            add_h(pos_items, ref_name_suffix, h_cx, h_cy, rot)
+
+    # to bom/pos file
+    with open(sch_desc["name"] + "_bom.csv", "w") as f:
+        bom_header = ["Comment", "Designator", "Footprint", "PartNumber"]
+        f.write(", ".join(bom_header) + "\n")
+        for k, v in bom_items.items():
+            f.write(('"%s", "%s", "%s", "%s"' % (k, ",".join(bom_array[k]), v[0], v[1])) + "\n")
+    with open(sch_desc["name"] + "_pos.csv", "w") as f:
+        pos_header = ["Designator", "Val", "Package", "Mid X", "Mid Y", "Rotation", "Layer"]
+        f.write(", ".join(pos_header) + "\n")
+        for item in pos_items:
+            for col in item[:-1]:
+                if type(col) == str:
+                    f.write('"%s", ' % (col))
+                else:
+                    f.write(str(col) + ", ")
+            f.write('"%s"\n' % (item[-1]))
 
 
 def check_sch_desc(desc):
@@ -301,9 +371,9 @@ def adjust_pcb(pcb_file, pos_desc_file):
                 new_pos = pos_desc["key_pos"][new_pos_r][new_pos_c]
             elif fp_type == "BTB":
                 if ref_name == "CN1":
-                    new_pos = [138.1125, 83.25]
+                    new_pos = [138.1125, 83.25, 0]
                 elif ref_name == "CN2":
-                    new_pos = [252.4125, 83.25]
+                    new_pos = [252.4125, 83.25, 0]
                 else: assert False
 
         elif state == "FP" and '  )' == curr_line:
@@ -315,7 +385,7 @@ def adjust_pcb(pcb_file, pos_desc_file):
 
         if new_pos is not None and "  (at " in curr_line:
             if fp_type == "SW":
-                new_pcb_lines.append("  (at %f %f %d)" % (new_pos[0], new_pos[1], 0 if pos_desc["led_pos_up"] else 180))
+                new_pcb_lines.append("  (at %f %f %d)" % (new_pos[0], new_pos[1], new_pos[2]))
             elif fp_type == "BTB":
                 new_pcb_lines.append("  (at %f %f)" % (new_pos[0], new_pos[1]))
         else:
@@ -396,7 +466,7 @@ if __name__ == "__main__":
         print("debug: " + str(args))
     if args.command == 'sch':
        gen_netlist(default_desc)
-       gen_layoutdesc(default_desc)
+       gen_layoutdesc(default_desc, led_pos_up=True)
     elif args.command == 'adjpcb':
         adjust_pcb(args.pcb_file, args.pos_file)
 
