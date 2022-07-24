@@ -201,10 +201,10 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
 
     # to bom/pos file
     with open(sch_desc["name"] + "_bom.csv", "w") as f:
-        bom_header = ["Comment", "Designator", "Footprint", "PartNumber"]
-        f.write(", ".join(bom_header) + "\n")
+        bom_header = ['"Comment"', '"Designator"', '"Footprint"', '"PartNumber"']
+        f.write(",".join(bom_header) + "\n")
         for k, v in bom_items.items():
-            f.write(('"%s", "%s", "%s", "%s"' % (k, ",".join(bom_array[k]), v[0], v[1])) + "\n")
+            f.write(('"%s","%s,","%s","%s"' % (k, ",".join(bom_array[k]), v[0], v[1])) + "\n")
     with open(sch_desc["name"] + "_pos.csv", "w") as f:
         pos_header = ["Designator", "Val", "Package", "Mid X", "Mid Y", "Rotation", "Layer"]
         f.write(", ".join(pos_header) + "\n")
