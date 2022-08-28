@@ -8,6 +8,8 @@ lfk17_lib = SchLib(tool=SKIDL).add_parts(*[
             Pin(num='2',name='~',func=Pin.PASSIVE,do_erc=True),
             Pin(num='VCC',name='~',func=Pin.PASSIVE,do_erc=True),
             Pin(num='GND',name='~',func=Pin.PASSIVE,do_erc=True),
+            Pin(num='CP',name='~',func=Pin.PASSIVE,do_erc=True),
+            Pin(num='CN',name='~',func=Pin.PASSIVE,do_erc=True),
             Pin(num='DI',name='~',func=Pin.PASSIVE,do_erc=True),
             Pin(num='DO',name='~',func=Pin.PASSIVE,do_erc=True)]),
         Part(name='MX',dest=TEMPLATE,tool=SKIDL,col=1,row=1,ref_prefix='M',num_units=1,fplist=['cherry'],do_erc=True,footprint='Keyboard:MXHS-1U',pins=[

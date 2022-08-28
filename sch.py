@@ -37,7 +37,7 @@ default_desc = {
     [7,  4, 4, 4, 4, 4, -2, 4, 4, 4, 4, 4, 4, 9],
     #LSH z  x  c  v  b      n  m  ,  .  /  rsh
     [9,  4, 4, 4, 4, 4, -2, 4, 4, 4, 4, 4, 11],
-    #_   C  W  A  S  *       S  A  W  F  C  _
+    #_   C  W  A  S  *       S  F  A  M  C  _
     ["2", 5, 5, 5, 8, 4, -2, 8, 5, 5, 5, 5, "3"]
     ],
     "num_rc": [5, 14],
@@ -50,7 +50,7 @@ default_desc = {
     [[3,1],   [3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],[3,10],[3,11],[3,12],     [3,14]],
     # lsh         z     x     c     v     b   / n     m     ,      .      /             rsh
     [[4,1],      [4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[4,10],[4,11],[4,12],        [4,14]],
-    #LCTL  LWIN  LALT         S           *   / S     RFUN         RWIN   MENU   RCTL
+    #LCTL  LWIN  LALT         S           *   / S     RFUN         RALT   MENU   RCTL
     [[5,1],[5,2],[5,3],      [5,6],      [5,7],[5,8],[5,9],       [5,11],[5,12],[5,13]],
     ],
     "led_conn": [
@@ -98,7 +98,6 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
     stabilizer_type = "pcb"
     # if modifier is None:
     # modifier = {}
-    #
 
 
     key_locs = []
@@ -278,6 +277,8 @@ def gen_netlist(desc):
             nets["r%d" % r_id] += key_map[name]["2"]
             nets["VCC"]        += key_map[name]["VCC"]
             nets["GND"]        += key_map[name]["GND"]
+            nets["VCC"]        += key_map[name]["CP"]
+            nets["GND"]        += key_map[name]["CN"]
 
     # led conn generation
     for i, led_con_def in enumerate(desc["led_conn"]):
@@ -343,7 +344,7 @@ def adjust_pcb(pcb_file, pos_desc_file):
         check_pos_desc(pos_desc)
     print(pos_desc)
 
-    pcb_lines = None
+    pcsdjflksdjfqwoeirpoweiu;fasdlkjasdfggggggfb_lines = None
     with open(pcb_file, "r") as pcb_ro:
         pcb_lines = pcb_ro.read().split("\n")
 
