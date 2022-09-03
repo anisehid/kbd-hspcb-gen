@@ -23,53 +23,20 @@ skidl_lib = SchLib('lib_sklib.py', tool=SKIDL)  # Create a SKiDL library object 
 # switch = Part(skidl_lib, 'MX', TEMPLATE, footprint="Keyboard:MXHS-1U", tool=SKIDL)
 switch = Part(skidl_lib, 'MX_LED', TEMPLATE, footprint="Keyboard:MXHS-1U-RGB-ALI-3528-HOLE-NOPAD", tool=SKIDL)
 btbconn = Part(skidl_lib, 'BTB', TEMPLATE, footprint="Keyboard:30PIN_0.4MM_BTB_MALE", tool=SKIDL)
+pinheader = Part(skidl_lib, 'P', TEMPLATE, footprint='Connector_PinHeader_2.00mm:PinHeader_1x04_P2.00mm_Vertical', tool=SKIDL)
+MM_PER_INCH = 25.4
 
-
-x = "X"
-default_desc = {
-    "name" : "default",
-    "layout" : [
-    #esc 1  2  3  4  5  6      7  8  9  0  -  = bks
-    [4,  4, 4, 4, 4, 4, 4, -2, 4, 4, 4, 4, 4, 4, 8],
-    #tab q  w  e  r  t       y  u  i  o  p  [  ] \
-    [6,  4, 4, 4, 4, 4, -2,  4, 4, 4, 4, 4, 4, 4, 6],
-    #cap a  s  d  f  g      h  j  k  l  ;  '  ret
-    [7,  4, 4, 4, 4, 4, -2, 4, 4, 4, 4, 4, 4, 9],
-    #LSH z  x  c  v  b      n  m  ,  .  /  rsh
-    [9,  4, 4, 4, 4, 4, -2, 4, 4, 4, 4, 4, 11],
-    #_   C  W  A  S  *       S  F  A  M  C  _
-    ["2", 5, 5, 5, 8, 4, -2, 8, 5, 5, 5, 5, "3"]
-    ],
-    "num_rc": [5, 14],
-    "key_matrix": [
-    # esc   1     2     3     4     5   / 6   / 7     8     9      0      -      =      bks
-    [[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[1,8],[1,9],[1,10],[1,11],[1,12],[1,13],[1,14]],
-    # tab    q     w     e     r     t   / y     u     i     o      p      [      ]      \
-    [[2,1], [2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[2,10],[2,11],[2,12],[2,13],[2,14]],
-    # cap      a     s     d     f     g   / h     j     k     l      ;      '           ret
-    [[3,1],   [3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],[3,10],[3,11],[3,12],     [3,14]],
-    # lsh         z     x     c     v     b   / n     m     ,      .      /             rsh
-    [[4,1],      [4,3],[4,4],[4,5],[4,6],[4,7],[4,8],[4,9],[4,10],[4,11],[4,12],        [4,14]],
-    #LCTL  LWIN  LALT         S           *   / S     RFUN         RALT   MENU   RCTL
-    [[5,1],[5,2],[5,3],      [5,6],      [5,7],[5,8],[5,9],       [5,11],[5,12],[5,13]],
-    ],
-    "led_conn": [
-        ["led1",17,16,15,14,13,12,11,21,22,23,24,25,26,36,35,34,33,32,31,41,43,44,45,46,47,57,56,53,52,51],
-        ["led2",17,18,19,110,111,112,113,114,214,213,212,211,210,29,28,27,37,38,39,310,311,312,314,414,412,411,410,49,48,58,59,511,512,513],
-    ],
-    "conn_def": [
-        #    1     2  3  4     5  6  7  8
-        ["VCC","GND", x, x,"led1", x, x, x,
-        "r1", "r2", "r3", "r4", "r5", x, # 14
-        "c1", "c2", "c3", "c4", "c5", "c6", "c7", x, # 22
-        x, x, x, x, x, x, x, x], #30
-        #    1     2  3  4     5  6  7  8
-        ["VCC","GND", x, x,"led2", x, x, x,
-        "r1", "r2", "r3", "r4", "r5", x, # 14
-        "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", # 22
-        x, x, x, x, x, x, x, x] #30
-    ],
-}
+def get_output_dir_from_name(name):
+    if not os.path.exists(name):
+        print("dir %s does not exists" % (name))
+        sys.exit(1)
+        #os.system("mkdir %s" % (name))
+    elif not os.path.isdir(name):
+        print("%s exists but is not a dir" % (name))
+        sys.exit(1)
+    else:
+        output_dir = name
+    return output_dir
 
 def r_c_num_to_str(r_num, c_num): return str(r_num) + str(c_num)
 def rc_num_to_r_c_num(rc_num): return int(str(rc_num)[0]), int(str(rc_num)[1:])
@@ -85,12 +52,14 @@ def keymapidx_to_posmapidx_transdict(key_map):
     return trans_dict
 
 def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
+    name = sch_desc["name"]
+    output_dir = get_output_dir_from_name(name)
+
     #### prepare layout_desc  ####
     trans_dict = keymapidx_to_posmapidx_transdict(sch_desc["key_matrix"])
     rev_trans_dict = {}
     for k, v in trans_dict.items(): rev_trans_dict[v] = k
 
-    MM_PER_INCH = 25.4
     KEY_DIST = 0.75 * MM_PER_INCH
     esc_key_cx_cy = (2.8125 * MM_PER_INCH, 2.90625 * MM_PER_INCH)
     ### calc key pos and sat pos
@@ -98,7 +67,6 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
     stabilizer_type = "pcb"
     # if modifier is None:
     # modifier = {}
-
 
     key_locs = []
     sat_locs = []
@@ -148,16 +116,16 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
         "led_pos_up": led_pos_up
     }
 
-    with open(sch_desc["name"]+"_layoutdesc.json", "w") as f:
+    with open(output_dir + "/%s_posdesc.json" % (name), "w") as f:
         json.dump(layout_desc, f)
 
     ########### bom pos handle ###########
     bom_items = {"1N4148": ["SOD-323", ""],
                  "CONN2x15": ["2x15pin_0.4", ""],
                  "KHHS": ["HS1U", ""],
-                 "led2812": ["3528-rev", ""]}
-    bom_array = {"1N4148": [], "CONN2x15": [], "KHHS": [], "led2812": []}
-
+                 "led2812": ["3528-rev", ""],
+                 "cap0603": ["C0603", ""]}
+    bom_array = {"1N4148": [], "CONN2x15": [], "KHHS": [], "led2812": [], "cap0603": []}
     pos_items = []
 
     # add conn
@@ -175,6 +143,9 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
     def add_h(pos_items, ref_suf, cx, cy, rot):
         bom_array["KHHS"].append("S" + ref_suf)
         pos_items.append(["S" + ref_suf, "hssocket", "kh1u", cx, cy, rot, "bottom"])
+    def add_c(pos_items, ref_suf, cx, cy, rot):
+        bom_array["KHHS"].append("S" + ref_suf)
+        pos_items.append(["C" + ref_suf, "capacitor", "c0603", cx, cy, rot, "bottom"])
 
     for rid, row in enumerate(key_locs):
         for cid, key in enumerate(row):
@@ -187,6 +158,7 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
             diode_offX, diode_offY = 5.355607, -2.009679
             led_offX, led_offY = 0, 5.08
             hs_offX, hs_offY = 0, -5.08
+            cap_offX, cap_offY = 4.12, 4.355
 
             d_cx = cx + cos_rot * diode_offX
             d_cy = cy + cos_rot * diode_offY
@@ -194,17 +166,20 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
             l_cy = cy + cos_rot * led_offY
             h_cx = cx + cos_rot * hs_offX
             h_cy = cy + cos_rot * hs_offY
+            c_cx = cx + cos_rot * cap_offX
+            c_cy = cy + cos_rot * cap_offY
             add_d(pos_items, ref_name_suffix, d_cx, d_cy, rot)
             add_l(pos_items, ref_name_suffix, l_cx, l_cy, rot)
             add_h(pos_items, ref_name_suffix, h_cx, h_cy, rot)
+            add_c(pos_items, ref_name_suffix, c_cx, c_cy, rot)
 
     # to bom/pos file
-    with open(sch_desc["name"] + "_bom.csv", "w") as f:
+    with open(output_dir + "/%s_bom.csv" % (name), "w") as f:
         bom_header = ['"Comment"', '"Designator"', '"Footprint"', '"PartNumber"']
         f.write(",".join(bom_header) + "\n")
         for k, v in bom_items.items():
             f.write(('"%s","%s,","%s","%s"' % (k, ",".join(bom_array[k]), v[0], v[1])) + "\n")
-    with open(sch_desc["name"] + "_pos.csv", "w") as f:
+    with open(output_dir + "/%s_pos.csv" % (name), "w") as f:
         pos_header = ["Designator", "Val", "Package", "Mid X", "Mid Y", "Rotation", "Layer"]
         f.write(", ".join(pos_header) + "\n")
         for item in pos_items:
@@ -235,8 +210,8 @@ def check_sch_desc(desc):
 
 
 def gen_netlist(desc):
-    check_sch_desc(desc)
     name = desc["name"]
+    output_dir = get_output_dir_from_name(name)
 
     # nets = defaultdict(Net)
     nets = {}
@@ -249,6 +224,22 @@ def gen_netlist(desc):
         nets[name] = Net(name)
     nets["VCC"] = Net("VCC")
     nets["GND"] = Net("GND")
+
+    pinheader_left  = pinheader(ref="P1")
+    pinheader_right = pinheader(ref="P2")
+    # I2c pin header
+    nets["sdaR"] = Net("sdaR")
+    nets["sdaL"] = Net("sdaL")
+    nets["sclR"] = Net("sclR")
+    nets["sclL"] = Net("sclL")
+    nets["GND"] += pinheader_left["1"]
+    nets["VCC"] += pinheader_left["2"]
+    nets["sclL"] += pinheader_left["3"]
+    nets["sdaL"] += pinheader_left["4"]
+    nets["GND"] += pinheader_right["1"]
+    nets["VCC"] += pinheader_right["2"]
+    nets["sclR"] += pinheader_right["3"]
+    nets["sdaR"] += pinheader_right["4"]
 
     # conn generation
     btb_conns = []
@@ -310,7 +301,7 @@ def gen_netlist(desc):
     generate_netlist()
 
     # copy netlist to pcb project
-    os.system("mv sch.net dest.net")
+    os.system("mv sch.net %s/gen.net" % (output_dir))
 
 
 
@@ -344,7 +335,6 @@ def adjust_pcb(pcb_file, pos_desc_file):
         check_pos_desc(pos_desc)
     print(pos_desc)
 
-    pcsdjflksdjfqwoeirpoweiu;fasdlkjasdfggggggfb_lines = None
     with open(pcb_file, "r") as pcb_ro:
         pcb_lines = pcb_ro.read().split("\n")
 
@@ -407,6 +397,10 @@ def adjust_pcb(pcb_file, pos_desc_file):
     new_pcb_lines.append(lib_pcbelem.edgecut)
     # add mount holes
     new_pcb_lines.append(lib_pcbelem.padded_holes)
+
+    # attribute
+    # skip:   do not generate hole on pcb
+    # padded: generate pcb hole with pad ring
     holes = [
         # left most (move right)
         (87.4893, 92.5208, "left skip"),
@@ -437,7 +431,15 @@ def adjust_pcb(pcb_file, pos_desc_file):
         (295.275,  135.89, "right"),
         # right most (move left)
         (322.3399, 92.5208, "right skip"),
-        (345.8312 - 1.5, 121.1212, "right skip")
+        (345.8312 - 1.5, 121.1212, "right skip"),
+
+        # side holes
+        (63.7489 + 1.42,  121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "left"),
+        (63.7489 + 1.42,  121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "left"),
+        (63.7489 + 1.42,  121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "left"),
+        (345.8312 - 1.42, 121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "right"),
+        (345.8312 - 1.42, 121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "right"),
+        (345.8312 - 1.42, 121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "right"),
     ]
     new_pcb_lines += gen_mount_hole(holes)
 
@@ -458,19 +460,26 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(dest='command')
     sch = subparsers.add_parser('sch', help='generate sch and pos')
     # blame.add_argument('name', nargs='+', help='name(s) to blame')
+    sch.add_argument('desc', help='keyboard description')
 
     adjpcb = subparsers.add_parser('adjpcb', help='adjust generated pcb')
     adjpcb.add_argument('pcb_file', help='name of pcb_file (.kicad_pcb)')
     adjpcb.add_argument('pos_file', help='path to pos_file (.json)')
     args = parser.parse_args()
+    print(args)
+
     if args.debug:
         print("debug: " + str(args))
     if args.command == 'sch':
-       gen_netlist(default_desc)
-       gen_layoutdesc(default_desc, led_pos_up=True)
+        with open(args.desc) as f: desc = json.load(f)
+        print(desc)
+        check_sch_desc(desc)
+
+        gen_netlist(desc)
+        gen_layoutdesc(desc, led_pos_up=True)
     elif args.command == 'adjpcb':
         adjust_pcb(args.pcb_file, args.pos_file)
 
     # cleanup temp files
-    os.system("rm sch.log sch.erc sch_lib_sklib.py")
+    os.system("rm -f sch.log sch.erc sch_lib_sklib.py")
     os.system("rm -rf __pycache__")

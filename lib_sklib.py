@@ -18,6 +18,11 @@ lfk17_lib = SchLib(tool=SKIDL).add_parts(*[
         Part(name='D',dest=TEMPLATE,tool=SKIDL,description='1N4148 Switch Diode',keywords='diode',x=1.0,y=1.0,row=1,ref_prefix='D',num_units=1,fplist=['D_*'],do_erc=True,footprint='Keyboard:0805D',pins=[
             Pin(num='1',name='A',func=Pin.PASSIVE,do_erc=True),
             Pin(num='2',name='K',func=Pin.PASSIVE,do_erc=True)]),
+        Part(name='P',dest=TEMPLATE,tool=SKIDL,description='2.0mm pitch 1x4 pin header',keywords='pinheader',x=1.0,y=1.0,row=1,ref_prefix='P',num_units=1,fplist=['P_*'],do_erc=True,footprint='Connector_PinHeader_2.00mm:PinHeader_1x04_P2.00mm_Vertical',pins=[
+            Pin(num='1',name='1',func=Pin.PASSIVE,do_erc=True),
+            Pin(num='2',name='2',func=Pin.PASSIVE,do_erc=True),
+            Pin(num='3',name='3',func=Pin.PASSIVE,do_erc=True),
+            Pin(num='4',name='4',func=Pin.PASSIVE,do_erc=True)]),
         Part(name='BTB',dest=TEMPLATE,tool=SKIDL,description='DF40C-30DS-0.4V Male',keywords='b2b-conn',row=1,ref_prefix='CN',num_units=1,fplist=['CN_*'],do_erc=True,footprint='Keyboard:30PIN_0.4MM_BTB_MALE',pins=[
             Pin(num= '1',name= '1',func=Pin.PASSIVE,do_erc=True),
             Pin(num= '2',name= '2',func=Pin.PASSIVE,do_erc=True),
