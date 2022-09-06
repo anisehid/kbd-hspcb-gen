@@ -144,7 +144,7 @@ padded_holes = """
     (pad "" np_thru_hole oval locked (at 0 0) (size 9.99998 5.00126) (drill oval 7.00024 2.49936) (layers *.Cu *.Mask) (tstamp 9e0e6fc0-a269-4822-b93d-4c5e6689ff11))
   )
 
-  (footprint "hole:PKRH" (layer "F.Cu")
+  (footprint "hole:PKRHC" (layer "F.Cu")
     (tedit 5CBDEAB1) (tstamp 00000000-0000-0000-0000-00005c600abe)
     (at 190.5 111.76)
     (attr exclude_from_pos_files exclude_from_bom)
@@ -157,11 +157,6 @@ padded_holes = """
       (tstamp df9a1242-2d73-4343-b170-237bc9a8080f)
     )
     (pad "" np_thru_hole oval locked (at 0 0) (size 5.1 2.5) (drill oval 5.1 2.5) (layers *.Cu *.Mask) (tstamp 2d0d333a-99a0-4575-9433-710c8cc7ac0b))
-    (model "cherry_mx1.wrl"
-      (offset (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
 """

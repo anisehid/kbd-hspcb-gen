@@ -33,9 +33,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 2.5,
-          "height": 2.5,
-          "width": 2.5
+          "drill": 0.31,
+          "height": 0.6,
+          "width": 0.6
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -310,6 +310,10 @@
         {
           "diameter": 0.0,
           "drill": 0.0
+        },
+        {
+          "diameter": 0.51,
+          "drill": 0.31
         }
       ],
       "zones_allow_external_fillets": false,
@@ -563,7 +567,7 @@
     "last_paths": {
       "gencad": "",
       "idf": "",
-      "netlist": "default.net",
+      "netlist": "gen.net",
       "specctra_dsn": "",
       "step": "",
       "vrml": ""

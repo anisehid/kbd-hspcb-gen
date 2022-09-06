@@ -47,11 +47,12 @@ def keymapidx_to_posmapidx_transdict(key_map):
         for c_id, key in enumerate(row):
             r, c = key
             tran_key = "%d%d" % (r, c)
+            print(tran_key, (r_id, c_id))
             trans_dict[tran_key] = (r_id, c_id)
 
     return trans_dict
 
-def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
+def gen_layoutdesc(sch_desc, led_pos_up=False):
     name = sch_desc["name"]
     output_dir = get_output_dir_from_name(name)
 
@@ -73,6 +74,7 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
     for row_idx, row in enumerate(sch_desc["layout"]):
         key_locs.append([])
         for col_idx, col in enumerate(row):
+            vertical_sat = False
             if type(col) is str:
                 col = int(col)
             elif col < 0:
@@ -85,21 +87,38 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
                 #     mov_x      = mod[2][0]
                 #     mov_y      = mod[2][1]
                 # except:
-                width = col
-                rotate_deg = 0
-                mov_x = 0
-                mov_y = 0
+                if type(col) is float:
+                    rem = col - int(col)
+                    col = int(col)
+                    if rem == 0.5:
+                        vertical_sat = True
+                        width = 8
+                        rotate_deg = 0
+                        mov_x = 0
+                        mov_y = -2
+                    else: assert False
+                else:
+                    width = col
+                    rotate_deg = 0
+                    mov_x = 0
+                    mov_y = 0
 
                 center_pos = (key_pos[0] + (col - 4) / 4 * KEY_DIST / 2 + mov_x / 4.0 * KEY_DIST,
-                              key_pos[1] + (mov_y / 4.0) * KEY_DIST,
-                              180 if led_pos_up else 0) # rotate
+                                key_pos[1] + (mov_y / 4.0) * KEY_DIST,
+                                180 if led_pos_up else 0) # rotate
                 key_locs[-1].append(center_pos)
 
-                if col >= 8:  # sat axis
-                    rev_sat_axis=(True if (row_idx == len(sch_desc["layout"]) - 1 and rotate_deg == 0) else False)
-                    sat_locs.append([center_pos[0] - 0.46875 * MM_PER_INCH, center_pos[1], 180 if rev_sat_axis else 0])
-                    sat_locs.append([center_pos[0] + 0.46875 * MM_PER_INCH, center_pos[1], 180 if rev_sat_axis else 0])
-            key_pos = key_pos[0] + col / 4 * KEY_DIST, key_pos[1]
+                if width >= 8:  # sat axis
+                    if not vertical_sat:
+                        rev_sat_axis=(True if (row_idx == len(sch_desc["layout"]) - 1 and rotate_deg == 0) else False)
+                        sat_locs.append([center_pos[0] - 0.46875 * MM_PER_INCH, center_pos[1], 180 if rev_sat_axis else 0])
+                        sat_locs.append([center_pos[0] + 0.46875 * MM_PER_INCH, center_pos[1], 180 if rev_sat_axis else 0])
+                    else: # vertical
+                        sat_locs.append([center_pos[0], center_pos[1] - 0.46875 * MM_PER_INCH, 270])
+                        sat_locs.append([center_pos[0], center_pos[1] + 0.46875 * MM_PER_INCH, 270])
+
+
+                key_pos = key_pos[0] + col / 4 * KEY_DIST, key_pos[1]
 
         # try:
         #     row_height = modifier[(row_idx,)][0] / 4.0 * KEY_DIST
@@ -112,7 +131,7 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
         "trans_dict": trans_dict,
         "key_pos": key_locs,
         "sat_pos": sat_locs,
-        "row4_lshift": row4_lshift,
+        "r4lshift": sch_desc["r4lshift"],
         "led_pos_up": led_pos_up
     }
 
@@ -144,8 +163,10 @@ def gen_layoutdesc(sch_desc, row4_lshift=False, led_pos_up=False):
         bom_array["KHHS"].append("S" + ref_suf)
         pos_items.append(["S" + ref_suf, "hssocket", "kh1u", cx, cy, rot, "bottom"])
     def add_c(pos_items, ref_suf, cx, cy, rot):
-        bom_array["KHHS"].append("S" + ref_suf)
+        bom_array["cap0603"].append("C" + ref_suf)
         pos_items.append(["C" + ref_suf, "capacitor", "c0603", cx, cy, rot, "bottom"])
+
+    print(rev_trans_dict)
 
     for rid, row in enumerate(key_locs):
         for cid, key in enumerate(row):
@@ -204,7 +225,7 @@ def check_sch_desc(desc):
     ### generated from layout above
     ### for pcb layout generation
     # assert "led_pos_up"  in desc  # led_pos_up: bool
-    # assert "row4_lshift" in desc  # bool
+    assert "r4lshift" in desc  # bool
     # assert "key_pos"  in desc     # layout: [[(X, Y, rot), ...]]  X, Y unit mm  rot
     # assert "sat_pos"  in desc     # layout: [[(X, Y, rot), ...]]  X, Y unit mm  rot
 
@@ -311,7 +332,7 @@ def check_pos_desc(desc):
     ### generated from layout above
     ### for pcb layout generation
     assert "led_pos_up"  in desc  # bool default False
-    assert "row4_lshift" in desc  # bool default False
+    assert "r4lshift"    in desc  # bool default False
     assert "trans_dict"  in desc  # S12 -> [0, 1] mapping
     assert "key_pos"  in desc     # layout: [[(X, Y), ...]]  X, Y unit mm
     assert "sat_pos"  in desc     # layout: [[(X, Y, rot), ...]]  X, Y unit mm  rot
@@ -329,7 +350,10 @@ def gen_mount_hole(hole_desc):
 
 
 import lib_pcbelem
-def adjust_pcb(pcb_file, pos_desc_file):
+def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
+    pcb_file_ext = os.path.splitext(os.path.basename(pcb_file))[1]
+    assert pcb_file_ext == ".kicad_pcb"
+
     with open(pos_desc_file, "r") as desc_file:
         pos_desc = json.load(desc_file)
         check_pos_desc(pos_desc)
@@ -340,20 +364,34 @@ def adjust_pcb(pcb_file, pos_desc_file):
 
     # adjust position of keys and conns
     new_pcb_lines = []
-    state = "IDLE" # /"FP"
-    fp_type = None # "SW"/"BTB"
+    state = "IDLE" # "IDLE"/"FP" footprint
+    # fp_type "SW" switch "BTB" conn "ST" stabilzier  SH split hole
+    fp_type = None #
     new_pos = None
-    for l in range(len(pcb_lines) - 2):
+    st_last_line = False
+    sh_last_line = False
+    for l in range(len(pcb_lines) - 2):   # leave out
         curr_line = pcb_lines[l]
-        if state == "IDLE" and '(footprint "Keyboard' in curr_line:
+        if state == "IDLE" and (
+                '(footprint "Keyboard' in curr_line or
+                '(footprint "hole' in curr_line or
+                '(footprint "Mounting' in curr_line):
             state = "FP"
             if "-1U-" in curr_line:
                 fp_type = "SW"
             elif "BTB_MALE" in curr_line:
                 fp_type = "BTB"
-            else: assert False
+            elif "MXST" in curr_line:  # remove existing stabilizer
+                fp_type = "ST"
+            elif "PKRH" in curr_line:  # remove existing split hole
+                fp_type = "SH"
+            elif "Hole_2.5mm" in curr_line:  # remove existing split hole
+                fp_type = "SH"
+            else:
+                print(curr_line)
+                assert False
             # find new pos for elem, find ref name
-            l_fw = 1
+            l_fw = 1  # line forward
             while "fp_text reference" not in pcb_lines[l + l_fw]:
                 l_fw += 1
             ref_name = pcb_lines[l + l_fw].split('"')[1]
@@ -369,10 +407,11 @@ def adjust_pcb(pcb_file, pos_desc_file):
 
         elif state == "FP" and '  )' == curr_line:
             state = "IDLE"
+            if fp_type == "ST": st_last_line = True
+            if fp_type == "SH": sh_last_line = True
             fp_type = None
             new_pos = None
         else: pass  # state unchange
-
 
         if new_pos is not None and "  (at " in curr_line:
             if fp_type == "SW":
@@ -380,71 +419,81 @@ def adjust_pcb(pcb_file, pos_desc_file):
             elif fp_type == "BTB":
                 new_pcb_lines.append("  (at %f %f)" % (new_pos[0], new_pos[1]))
         else:
-            new_pcb_lines.append(curr_line)
+            if st_last_line == True or sh_last_line == True:
+                st_last_line = False
+                sh_last_line = False
+            elif fp_type != "ST" and fp_type != "SH":
+                new_pcb_lines.append(curr_line)
 
     # print(pcb_lines[-5:-2])
-
     # add sat axis
     for sat_pos in pos_desc["sat_pos"]:
         x, y, rot = sat_pos
         new_pcb_lines.append(lib_pcbelem.mxst_tmpl % ("%f %f %d" % (x, y, rot)))
-    # add split holes
-    if pos_desc["row4_lshift"]:
-        new_pcb_lines.append(lib_pcbelem.split_hole_lshift)
-    else:
-        new_pcb_lines.append(lib_pcbelem.split_hole_normal)
-    # edge cut
-    new_pcb_lines.append(lib_pcbelem.edgecut)
-    # add mount holes
-    new_pcb_lines.append(lib_pcbelem.padded_holes)
 
-    # attribute
-    # skip:   do not generate hole on pcb
-    # padded: generate pcb hole with pad ring
-    holes = [
-        # left most (move right)
-        (87.4893, 92.5208, "left skip"),
-        (63.7489 + 1.5, 121.1212, "left skip"),
-        # left top
-        (80.9625,  73.81875, "left"),
-        (157.1625, 73.81875, "left"),
-        (176.2125, 73.81875, "left"),
-        # left mid
-        (128.58751, 102.1, "left"),
-        (147.63751, 102.1, "left padded"),
-        (166.68751, 102.1, "left"),
-        # left mid low
-        (104.775,  135.89, "left"),
-        (142.875,  135.89, "left padded"),
-        (180.975,  135.89, "left"),
-        # right top
-        (195.2625, 73.81875, "right"),
-        (214.3125, 73.81875, "right"),
-        (309.5625, 73.81875, "right"),
-        # right mid
-        (204.7875,  102.1, "right "),
-        (228.6   ,  102.1, "right padded"),
-        (261.93749, 102.1, "right"),
-        # right mid low
-        (219.075,  135.89, "right"),
-        (257.175,  135.89, "padded"),
-        (295.275,  135.89, "right"),
-        # right most (move left)
-        (322.3399, 92.5208, "right skip"),
-        (345.8312 - 1.5, 121.1212, "right skip"),
+    if gen_holes:
+        # add split holes
+        if pos_desc["r4lshift"]:
+            new_pcb_lines.append(lib_pcbelem.split_hole_lshift)
+        else:
+            new_pcb_lines.append(lib_pcbelem.split_hole_normal)
+        # edge cut
+        new_pcb_lines.append(lib_pcbelem.edgecut)
+        # add mount holes
+        new_pcb_lines.append(lib_pcbelem.padded_holes)
 
-        # side holes
-        (63.7489 + 1.42,  121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "left"),
-        (63.7489 + 1.42,  121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "left"),
-        (63.7489 + 1.42,  121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "left"),
-        (345.8312 - 1.42, 121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "right"),
-        (345.8312 - 1.42, 121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "right"),
-        (345.8312 - 1.42, 121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "right"),
-    ]
-    new_pcb_lines += gen_mount_hole(holes)
+        # attribute
+        # skip:   do not generate hole on pcb
+        # padded: generate pcb hole with pad ring
+        r4offset = 0 if not pos_desc["r4lshift"] else 0.25 * 0.75 * MM_PER_INCH
+        r4_rightmost_offset = 0 if not pos_desc["r4lshift"] else 0.25 * 0.75 * MM_PER_INCH - 2 * 0.75 * MM_PER_INCH
+
+        holes = [
+            # left most (move right)
+            (87.4893, 92.5208, "left skip"),
+            (63.7489 + 1.5, 121.1212, "left skip"),
+            # left top
+            (80.9625,  73.81875, "left"),
+            (157.1625, 73.81875, "left"),
+            (176.2125, 73.81875, "left"),
+            # left mid
+            (128.58751, 102.1, "left"),
+            (147.63751, 102.1, "left padded"),
+            (166.68751, 102.1, "left"),
+            # left mid low
+            (104.775 - r4offset,  135.89, "left"),
+            (142.875 - r4offset,  135.89, "left padded"),
+            (180.975 - r4offset,  135.89, "left"),
+            # right top
+            (195.2625, 73.81875, "right"),
+            (214.3125, 73.81875, "right"),
+            (309.5625, 73.81875, "right"),
+            # right mid
+            (204.7875,  102.1, "right "),
+            (228.6   ,  102.1, "right padded"),
+            (261.93749, 102.1, "right"),
+            # right mid low
+            (219.075 - r4offset,  135.89, "right"),
+            (257.175 - r4offset,  135.89, "padded"),
+            (295.275 - r4_rightmost_offset,  135.89, "right"),
+            # right most (move left)
+            (322.3399, 92.5208, "right skip"),
+            (345.8312 - 1.5, 121.1212, "right skip"),
+
+            # side holes
+            (63.7489 + 1.42,  121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "left"),
+            # (63.7489 + 1.42,  121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "left"),
+            (63.7489 + 1.42,  121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "left"),
+            (345.8312 - 1.42, 121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "right"),
+            # (345.8312 - 1.42, 121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "right"),
+            (345.8312 - 1.42, 121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "right"),
+        ]
+        new_pcb_lines += gen_mount_hole(holes)
 
     new_pcb_lines.append(")")
     new_pcb_lines.append("")
+
+    os.system("cp %s %s" % (pcb_file, pcb_file + ".bak"))
 
     with open(pcb_file, "w") as pcb_w:
         pcb_w.write("\n".join(new_pcb_lines))
@@ -465,6 +514,8 @@ if __name__ == "__main__":
     adjpcb = subparsers.add_parser('adjpcb', help='adjust generated pcb')
     adjpcb.add_argument('pcb_file', help='name of pcb_file (.kicad_pcb)')
     adjpcb.add_argument('pos_file', help='path to pos_file (.json)')
+    adjpcb.add_argument('--gen-holes', action='store_true', help='generate holes')
+    adjpcb.add_argument('--gen-split', action='store_true', help='generate holes')
     args = parser.parse_args()
     print(args)
 
@@ -478,7 +529,7 @@ if __name__ == "__main__":
         gen_netlist(desc)
         gen_layoutdesc(desc, led_pos_up=True)
     elif args.command == 'adjpcb':
-        adjust_pcb(args.pcb_file, args.pos_file)
+        adjust_pcb(args.pcb_file, args.pos_file, args.gen_holes, args.gen_split)
 
     # cleanup temp files
     os.system("rm -f sch.log sch.erc sch_lib_sklib.py")
