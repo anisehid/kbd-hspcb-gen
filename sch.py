@@ -18,13 +18,16 @@ from skidl import (
     lib_search_paths
 )
 
+MM_PER_INCH = 25.4
+KEY_DIST = 0.75 * MM_PER_INCH
+offset_from_60 = 1.25 * KEY_DIST
+
 skidl_lib = SchLib('lib_sklib.py', tool=SKIDL)  # Create a SKiDL library object from the new file.
 
 # switch = Part(skidl_lib, 'MX', TEMPLATE, footprint="Keyboard:MXHS-1U", tool=SKIDL)
 switch = Part(skidl_lib, 'MX_LED', TEMPLATE, footprint="Keyboard:MXHS-1U-RGB-ALI-3528-HOLE-NOPAD", tool=SKIDL)
 btbconn = Part(skidl_lib, 'BTB', TEMPLATE, footprint="Keyboard:30PIN_0.4MM_BTB_MALE", tool=SKIDL)
 pinheader = Part(skidl_lib, 'P', TEMPLATE, footprint='Connector_PinHeader_2.00mm:PinHeader_1x04_P2.00mm_Vertical', tool=SKIDL)
-MM_PER_INCH = 25.4
 
 def get_output_dir_from_name(name):
     if not os.path.exists(name):
@@ -57,12 +60,20 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
     output_dir = get_output_dir_from_name(name)
 
     #### prepare layout_desc  ####
+    kbd_type = sch_desc["kbd_type"]
+    print(kbd_type)
+
     trans_dict = keymapidx_to_posmapidx_transdict(sch_desc["key_matrix"])
     rev_trans_dict = {}
     for k, v in trans_dict.items(): rev_trans_dict[v] = k
 
-    KEY_DIST = 0.75 * MM_PER_INCH
-    esc_key_cx_cy = (2.8125 * MM_PER_INCH, 2.90625 * MM_PER_INCH)
+    if kbd_type == "anise60":
+        esc_key_cx_cy = (2.8125 * MM_PER_INCH, 2.90625 * MM_PER_INCH)
+    # elif kbd_type == "anise85":
+    #     esc_key_cx_cy = (2.8125 * MM_PER_INCH, 2.90625 * MM_PER_INCH - offset_from_60)
+    elif kbd_type == "anise90":
+        esc_key_cx_cy = (2.8125 * MM_PER_INCH - offset_from_60, 2.90625 * MM_PER_INCH - offset_from_60)
+
     ### calc key pos and sat pos
     key_pos = esc_key_cx_cy
     stabilizer_type = "pcb"
@@ -73,10 +84,15 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
     sat_locs = []
     for row_idx, row in enumerate(sch_desc["layout"]):
         key_locs.append([])
+        row_height = KEY_DIST
         for col_idx, col in enumerate(row):
             vertical_sat = False
             if type(col) is str:
                 col = int(col)
+                if col == 0:
+                    col = 0.5
+                elif col < 0:
+                    row_height += (-col / 4) * KEY_DIST
             elif col < 0:
                 col = 0 # -col  skip split gap
             else:
@@ -96,6 +112,16 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
                         rotate_deg = 0
                         mov_x = 0
                         mov_y = -2
+                    elif math.isclose(rem, 0.1, rel_tol=1e-6):
+                        width = col
+                        rotate_deg = 0
+                        mov_x = 0
+                        mov_y = 1
+                    elif math.isclose(rem, 0.0, rel_tol=1e-6):
+                        width = col
+                        rotate_deg = 0
+                        mov_x = 0
+                        mov_y = 0.5
                     else: assert False
                 else:
                     width = col
@@ -118,12 +144,11 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
                         sat_locs.append([center_pos[0], center_pos[1] + 0.46875 * MM_PER_INCH, 270])
 
 
-                key_pos = key_pos[0] + col / 4 * KEY_DIST, key_pos[1]
+            key_pos = key_pos[0] + col / 4 * KEY_DIST, key_pos[1]
 
         # try:
         #     row_height = modifier[(row_idx,)][0] / 4.0 * KEY_DIST
         # except:
-        row_height = KEY_DIST
         key_pos = esc_key_cx_cy[0], key_pos[1] + row_height
 
     layout_desc = {
@@ -132,7 +157,8 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
         "key_pos": key_locs,
         "sat_pos": sat_locs,
         "r4lshift": sch_desc["r4lshift"],
-        "led_pos_up": led_pos_up
+        "led_pos_up": led_pos_up,
+        "kbd_type": kbd_type
     }
 
     with open(output_dir + "/%s_posdesc.json" % (name), "w") as f:
@@ -149,10 +175,16 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
 
     # add conn
     bom_array["CONN2x15"] += ["CN1", "CN2"]
-    pos_items += [
-        ["J1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",138.112500,83.250000,0.000000,"bottom"],
-        ["J2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",252.412500,83.250000,0.000000,"bottom"]
-    ]
+    if kbd_type == "anise60":
+        pos_items += [
+            ["J1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",138.112500,83.250000,0.000000,"bottom"],
+            ["J2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",252.412500,83.250000,0.000000,"bottom"]
+        ]
+    elif kbd_type == "anise90":
+        pos_items += [
+            ["J1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",128.5875,59.4375,0.000000,"bottom"],
+            ["J2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",257.175,59.4375,0.000000,"bottom"]
+        ]
     def add_d(pos_items, ref_suf, cx, cy, rot):
         bom_array["1N4148"].append("D" + ref_suf)
         pos_items.append(["D" + ref_suf, "1N4148", "SOD-323", cx, cy, rot, "bottom"])
@@ -221,6 +253,9 @@ def check_sch_desc(desc):
     assert "key_matrix"  in desc  # matrix: [[(ROW, COL), ...]]        ROW/COL count from 1
     assert "led_conn"    in desc  # led_conn: [(SW_ID1, SW_ID2), ...]  SW_ID1 out to SW_ID2 in, SW_ID1 is NONE, from conn,
     assert "conn_def"    in desc  # conn_def: ["net1", "net2", ...]    conn_def[i]  (i+1) pin netname
+
+    assert "kbd_type" in desc
+    assert desc["kbd_type"] in ["anise60", "anise85", "anise90"]
 
     ### generated from layout above
     ### for pcb layout generation
@@ -359,8 +394,12 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
         check_pos_desc(pos_desc)
     print(pos_desc)
 
+    kbd_type = pos_desc["kbd_type"]
+
     with open(pcb_file, "r") as pcb_ro:
         pcb_lines = pcb_ro.read().split("\n")
+
+    keep_holes = not gen_holes
 
     # adjust position of keys and conns
     new_pcb_lines = []
@@ -399,11 +438,18 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
                 new_pos_r, new_pos_c = pos_desc["trans_dict"][ref_name[1:]]
                 new_pos = pos_desc["key_pos"][new_pos_r][new_pos_c]
             elif fp_type == "BTB":
-                if ref_name == "CN1":
-                    new_pos = [138.1125, 83.25, 0]
-                elif ref_name == "CN2":
-                    new_pos = [252.4125, 83.25, 0]
-                else: assert False
+                if kbd_type == "anise60":
+                    if ref_name == "CN1":
+                        new_pos = [138.1125, 83.25, 0]
+                    elif ref_name == "CN2":
+                        new_pos = [252.4125, 83.25, 0]
+                    else: assert False
+                elif kbd_type == "anise90":
+                    if ref_name == "CN1":
+                        new_pos = [128.5875, 59.4375, 0]
+                    elif ref_name == "CN2":
+                        new_pos = [257.175, 59.4375, 0]
+                    else: assert False
 
         elif state == "FP" and '  )' == curr_line:
             state = "IDLE"
@@ -419,11 +465,17 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
             elif fp_type == "BTB":
                 new_pcb_lines.append("  (at %f %f)" % (new_pos[0], new_pos[1]))
         else:
-            if st_last_line == True or sh_last_line == True:
-                st_last_line = False
-                sh_last_line = False
-            elif fp_type != "ST" and fp_type != "SH":
-                new_pcb_lines.append(curr_line)
+            if keep_holes:
+                if st_last_line == True:
+                    st_last_line = False
+                elif fp_type != "ST":
+                    new_pcb_lines.append(curr_line)
+            else:
+                if st_last_line == True or sh_last_line == True:
+                    st_last_line = False
+                    sh_last_line = False
+                elif fp_type != "ST" and fp_type != "SH":
+                    new_pcb_lines.append(curr_line)
 
     # print(pcb_lines[-5:-2])
     # add sat axis
@@ -438,7 +490,6 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
         else:
             new_pcb_lines.append(lib_pcbelem.split_hole_normal)
         # edge cut
-        new_pcb_lines.append(lib_pcbelem.edgecut)
         # add mount holes
         new_pcb_lines.append(lib_pcbelem.padded_holes)
 
@@ -448,14 +499,24 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
         r4offset = 0 if not pos_desc["r4lshift"] else 0.25 * 0.75 * MM_PER_INCH
         r4_rightmost_offset = 0 if not pos_desc["r4lshift"] else 0.25 * 0.75 * MM_PER_INCH - 2 * 0.75 * MM_PER_INCH
 
+        if kbd_type == "anise60":
+            new_pcb_lines.append(lib_pcbelem.edgecut_anise60)
+        elif kbd_type == "anise90":
+            new_pcb_lines.append(lib_pcbelem.edgecut_anise90)
+
+        if kbd_type == "anise60":
+            top_row_y_sub = 0
+        elif kbd_type == "anise90":
+            top_row_y_sub = offset_from_60
+
         holes = [
-            # left most (move right)
-            (87.4893, 92.5208, "left skip"),
-            (63.7489 + 1.5, 121.1212, "left skip"),
+            # left oval holes (move right)
+            # (87.4893, 92.5208, "left skip"),
+            # (63.7489 + 1.5, 121.1212, "left skip"),
             # left top
-            (80.9625,  73.81875, "left"),
-            (157.1625, 73.81875, "left"),
-            (176.2125, 73.81875, "left"),
+            (80.9625,  73.81875 - top_row_y_sub, "left"),
+            (157.1625, 73.81875 - top_row_y_sub, "left"),
+            (176.2125, 73.81875 - top_row_y_sub, "left"),
             # left mid
             (128.58751, 102.1, "left"),
             (147.63751, 102.1, "left padded"),
@@ -465,9 +526,9 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
             (142.875 - r4offset,  135.89, "left padded"),
             (180.975 - r4offset,  135.89, "left"),
             # right top
-            (195.2625, 73.81875, "right"),
-            (214.3125, 73.81875, "right"),
-            (309.5625, 73.81875, "right"),
+            (195.2625, 73.81875 - top_row_y_sub, "right"),
+            (214.3125, 73.81875 - top_row_y_sub, "right"),
+            (309.5625, 73.81875 - top_row_y_sub, "right"),
             # right mid
             (204.7875,  102.1, "right "),
             (228.6   ,  102.1, "right padded"),
@@ -476,18 +537,36 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
             (219.075 - r4offset,  135.89, "right"),
             (257.175 - r4offset,  135.89, "padded"),
             (295.275 - r4_rightmost_offset,  135.89, "right"),
-            # right most (move left)
-            (322.3399, 92.5208, "right skip"),
-            (345.8312 - 1.5, 121.1212, "right skip"),
+            # right oval holes (move left)
+            # (322.3399, 92.5208, "right skip"),
+            # (345.8312 - 1.5, 121.1212, "right skip"),
 
-            # side holes
-            (63.7489 + 1.42,  121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "left"),
-            # (63.7489 + 1.42,  121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "left"),
-            (63.7489 + 1.42,  121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "left"),
-            (345.8312 - 1.42, 121.1212 - 0.75 * 2 * MM_PER_INCH + 4.5, "right"),
-            # (345.8312 - 1.42, 121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "right"),
-            (345.8312 - 1.42, 121.1212 + 0.75 * 1 * MM_PER_INCH + 4.5, "right"),
         ]
+        # side holes
+        if kbd_type == "anise60":
+            holes += [
+                (63.7489 + 1.42,  121.1212 - 2 * KEY_DIST + 4.5, "left"),
+                # (63.7489 + 1.42,  121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "left"),
+                (63.7489 + 1.42,  121.1212 + 1 * KEY_DIST + 4.5, "left"),
+                (345.8312 - 1.42, 121.1212 - 2 * KEY_DIST + 4.5, "right"),
+                # (345.8312 - 1.42, 121.1212 - 0.75 * 1 * MM_PER_INCH + 0  , "right"),
+                (345.8312 - 1.42, 121.1212 + 1 * KEY_DIST + 4.5, "right"),
+            ]
+        # elif kbd_type == "anise85":  anise 85 will not appear here
+        elif kbd_type == "anise90":
+            offset_side_y_extra = (offset_from_60 - KEY_DIST) / 2
+            # anise 85 left holes
+            holes += [
+                (63.7489 + 1.42                 ,  121.1212 - 3 * KEY_DIST - offset_side_y_extra, "left"),
+                (63.7489 + 1.42                 ,  121.1212 + 1 * KEY_DIST                      , "left"),
+            ]
+            holes += [
+                (63.7489 + 1.42 - offset_from_60,  121.1212 - 3 * KEY_DIST - offset_side_y_extra, "left"),
+                (63.7489 + 1.42 - offset_from_60,  121.1212 + 1 * KEY_DIST                      , "left"),
+                (345.8312 - 1.42 + offset_from_60, 121.1212 - 3 * KEY_DIST - offset_side_y_extra, "right"),
+                (345.8312 - 1.42 + offset_from_60, 121.1212 + 1 * KEY_DIST                      , "right"),
+            ]
+
         new_pcb_lines += gen_mount_hole(holes)
 
     new_pcb_lines.append(")")

@@ -69,7 +69,21 @@ mounthole2d5mmpadded_tmpl = """
   )
 """
 
-edgecut = """
+edgecut_anise60 = """
+  (gr_arc (start 345.29 64.82) (mid 346.562792 65.347208) (end 347.09 66.62) (layer "Edge.Cuts") (width 0.0991) (tstamp 245afab8-87c2-4797-af78-aa00d5229c94))
+  (gr_arc (start 347.09 157.22) (mid 346.562792 158.492792) (end 345.29 159.02) (layer "Edge.Cuts") (width 0.0991) (tstamp 435960f9-5f02-4a62-b70b-90c1310d341d))
+  (gr_arc (start 62.49 66.62) (mid 63.017208 65.347208) (end 64.29 64.82) (layer "Edge.Cuts") (width 0.0991) (tstamp 53450cca-0496-4005-a7ef-5b1ae88fa402))
+  (gr_line (start 347.09 66.62) (end 347.09 157.22) (layer "Edge.Cuts") (width 0.0991) (tstamp 5ee97714-8ad8-47a4-bd70-3ebc8406c7b5))
+  (gr_arc (start 64.29 159.02) (mid 63.017208 158.492792) (end 62.49 157.22) (layer "Edge.Cuts") (width 0.0991) (tstamp c41835e2-2b20-4f99-a85d-b1859480e6e6))
+  (gr_line (start 64.29 159.02) (end 345.28 159.02) (layer "Edge.Cuts") (width 0.0991) (tstamp e997c615-0a9d-46fc-872f-6b2d14f01b36))
+  (gr_line (start 62.49 157.22) (end 62.49 66.62) (layer "Edge.Cuts") (width 0.0991) (tstamp ee19a334-b72e-4d54-9a8e-a742ee56e7f1))
+  (gr_line (start 64.29 64.82) (end 345.29 64.82) (layer "Edge.Cuts") (width 0.0991) (tstamp f5156e03-6da9-4205-8d49-0997e01031c7))
+  (gr_text "GH60 PCB design by komar007 & jdcarpe | split60(v0.3) PCB designed by ngzh" (at 345.2 157.6) (layer "B.SilkS") (tstamp 7075a498-5749-4f19-ba7d-9b8161486d1a)
+    (effects (font (size 1.524 1.524) (thickness 0.3048)) (justify left mirror))
+  )
+"""
+
+edgecut_anise90 = """
   (gr_arc (start 345.29 64.82) (mid 346.562792 65.347208) (end 347.09 66.62) (layer "Edge.Cuts") (width 0.0991) (tstamp 245afab8-87c2-4797-af78-aa00d5229c94))
   (gr_arc (start 347.09 157.22) (mid 346.562792 158.492792) (end 345.29 159.02) (layer "Edge.Cuts") (width 0.0991) (tstamp 435960f9-5f02-4a62-b70b-90c1310d341d))
   (gr_arc (start 62.49 66.62) (mid 63.017208 65.347208) (end 64.29 64.82) (layer "Edge.Cuts") (width 0.0991) (tstamp 53450cca-0496-4005-a7ef-5b1ae88fa402))
