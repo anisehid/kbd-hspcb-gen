@@ -53,6 +53,7 @@
     )
     (pad_to_mask_clearance 0)
     (aux_axis_origin 62.49 159.02)
+    (grid_origin 182.11 71.88)
     (pcbplotparams
       (layerselection 0x00010fc_ffffffff)
       (disableapertmacros false)
@@ -7316,9 +7317,6 @@
     (effects (font (size 1 1) (thickness 0.2)) (justify left))
   )
 
-  (segment (start 182.127889 71.919749) (end 182.170638 71.877) (width 0.25) (layer "F.Cu") (net 0) (tstamp 0b628632-b860-4e78-aabf-e5603f3424e6))
-  (segment (start 137.955251 71.919749) (end 182.127889 71.919749) (width 0.25) (layer "F.Cu") (net 0) (tstamp 7b7220da-5216-4b48-8563-57d581de9c93))
-  (segment (start 137.2 72.675) (end 137.955251 71.919749) (width 0.25) (layer "F.Cu") (net 0) (tstamp 98e94e5b-ed0c-4c30-809f-44602d9d2e78))
   (segment (start 201.365751 75.340751) (end 193.659249 75.340751) (width 0.2) (layer "F.Cu") (net 1) (tstamp 12084ef4-8f61-4553-a4a8-2c3c7ffb25ce))
   (segment (start 183.7 75.325) (end 180.338391 75.325) (width 0.2) (layer "F.Cu") (net 1) (tstamp 2e08b5ff-bc90-4814-b234-baa7b4d365f6))
   (segment (start 172.075 81.475) (end 172.125 81.525) (width 0.2) (layer "F.Cu") (net 1) (tstamp 61be6501-cd0c-4f12-a452-26237a4c7e2e))

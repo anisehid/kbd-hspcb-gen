@@ -88,11 +88,14 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
         for col_idx, col in enumerate(row):
             vertical_sat = False
             if type(col) is str:
-                col = int(col)
-                if col == 0:
-                    col = 0.5
-                elif col < 0:
-                    row_height += (-col / 4) * KEY_DIST
+                if col == "O":
+                  col = 4
+                else:
+                  col = int(col)
+                  if col == 0:
+                      col = 0.5
+                  elif col < 0:
+                      row_height += (-col / 4) * KEY_DIST
             elif col < 0:
                 col = 0 # -col  skip split gap
             else:
@@ -165,38 +168,44 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
         json.dump(layout_desc, f)
 
     ########### bom pos handle ###########
-    bom_items = {"1N4148": ["SOD-323", ""],
-                 "CONN2x15": ["2x15pin_0.4", ""],
-                 "KHHS": ["HS1U", ""],
-                 "led2812": ["3528-rev", ""],
-                 "cap0603": ["C0603", ""]}
-    bom_array = {"1N4148": [], "CONN2x15": [], "KHHS": [], "led2812": [], "cap0603": []}
+    bom_items = {"1N4148": ["SOD-323", "C2128"],
+                 "CONN2x15": ["2x15pin_0.4", "C429942"],
+                 "KHHS": ["HS1U", "C2803348"],
+                 "WS2812B_3528RGB": ["LED-SMD", "C9900019240"],
+                 "cap0603": ["C0603", "C14663"]}
+    bom_array = {"1N4148": [], "CONN2x15": [], "KHHS": [], "WS2812B_3528RGB": [], "cap0603": []}
     pos_items = []
+
+    def pos_trans_fn_x(x): return x - 23.6775
+    def pos_trans_fn_y(y): return 9.00375 * 2 - y
+    def hs_trans_fn_x(x): return
+    def hs_trans_fn_y(x): return
 
     # add conn
     bom_array["CONN2x15"] += ["CN1", "CN2"]
     if kbd_type == "anise60":
-        pos_items += [
-            ["J1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",138.112500,83.250000,0.000000,"bottom"],
-            ["J2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",252.412500,83.250000,0.000000,"bottom"]
-        ]
+        cn1_pos = [138.112500,83.250000]
+        cn2_pos = [252.412500,83.250000]
     elif kbd_type == "anise90":
-        pos_items += [
-            ["J1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",128.5875,59.4375,0.000000,"bottom"],
-            ["J2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",257.175,59.4375,0.000000,"bottom"]
-        ]
+        cn1_pos = [142.8750,59.4375]
+        cn2_pos = [266.7000,59.4375]
+
+    pos_items += [
+        ["CN1","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",pos_trans_fn_x(cn1_pos[0]),pos_trans_fn_y(cn1_pos[1]),0.000000,"bottom"],
+        ["CN2","Conn_02x15_Odd_Even","30PIN_0.4MM_BTB_MALE",pos_trans_fn_x(cn2_pos[0]),pos_trans_fn_y(cn2_pos[1]),0.000000,"bottom"]
+    ]
     def add_d(pos_items, ref_suf, cx, cy, rot):
         bom_array["1N4148"].append("D" + ref_suf)
-        pos_items.append(["D" + ref_suf, "1N4148", "SOD-323", cx, cy, rot, "bottom"])
+        pos_items.append(["D" + ref_suf, "1N4148", "SOD-323", pos_trans_fn_x(cx), pos_trans_fn_y(cy), (rot + 180) % 360, "bottom"])
     def add_l(pos_items, ref_suf, cx, cy, rot):
-        bom_array["led2812"].append("LED" + ref_suf)
-        pos_items.append(["LED" + ref_suf, "led2812", "3528-rev", cx, cy, rot, "bottom"])
+        bom_array["WS2812B_3528RGB"].append("LED" + ref_suf)
+        pos_items.append(["LED" + ref_suf, "WS2812B_3528RGB", "LED-SMD", pos_trans_fn_x(cx), pos_trans_fn_y(cy), (rot + 180) % 360, "bottom"])
     def add_h(pos_items, ref_suf, cx, cy, rot):
         bom_array["KHHS"].append("S" + ref_suf)
-        pos_items.append(["S" + ref_suf, "hssocket", "kh1u", cx, cy, rot, "bottom"])
+        pos_items.append(["S" + ref_suf, "hssocket", "kh1u", pos_trans_fn_x(cx), pos_trans_fn_y(cy), (rot + 180) % 360, "bottom"])
     def add_c(pos_items, ref_suf, cx, cy, rot):
         bom_array["cap0603"].append("C" + ref_suf)
-        pos_items.append(["C" + ref_suf, "capacitor", "c0603", cx, cy, rot, "bottom"])
+        pos_items.append(["C" + ref_suf, "capacitor", "c0603", pos_trans_fn_x(cx), pos_trans_fn_y(cy), (rot + 90) % 360, "bottom"])
 
     print(rev_trans_dict)
 
@@ -210,7 +219,8 @@ def gen_layoutdesc(sch_desc, led_pos_up=False):
 
             diode_offX, diode_offY = 5.355607, -2.009679
             led_offX, led_offY = 0, 5.08
-            hs_offX, hs_offY = 0, -5.08
+            # hs_offX, hs_offY = 0, -5.08
+            hs_offX, hs_offY = -1.25+0.6, -3.8
             cap_offX, cap_offY = 4.12, 4.355
 
             d_cx = cx + cos_rot * diode_offX
@@ -446,9 +456,9 @@ def adjust_pcb(pcb_file, pos_desc_file, gen_holes, gen_split):
                     else: assert False
                 elif kbd_type == "anise90":
                     if ref_name == "CN1":
-                        new_pos = [128.5875, 59.4375, 0]
+                        new_pos = [142.875, 59.4375, 0]
                     elif ref_name == "CN2":
-                        new_pos = [257.175, 59.4375, 0]
+                        new_pos = [266.700, 59.4375, 0]
                     else: assert False
 
         elif state == "FP" and '  )' == curr_line:

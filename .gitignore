@@ -1,5 +1,6 @@
 *cache*
 *.net
 gerber*
+*-frame.*
 _saved*
 *backup*
